@@ -1,0 +1,262 @@
+#include "stdafx.h"
+#include<stdio.h>
+#include<malloc.h>
+#include<stdlib.h>
+#define N 10      //变元上限
+#define M 100    //字符上限
+
+struct bianyuan{   //单个变元结构所具有的属性
+  char ch;
+	int n;   
+};
+struct b_y_c{     //存储所有变元的结构
+	bianyuan kk[N];
+};
+
+struct zifu{        //字符节点
+	int u;    //序数
+	bianyuan by;  //变元
+	char f;   //操作符
+	zifu *next;
+};    
+
+struct bit_arry{     //该结构用于变元赋值
+	char bit[N];
+};
+int check(char a,bianyuan b[])   //检查b[]中是否已经有变元a
+{
+	int y=1;
+	for(int i=0;b[i].ch=='\0';++i)
+		if(a==b[i].ch)y=0;
+	return y;
+}
+void chushihua(b_y_c &ww)   //用于初始化
+{
+	for(int i=0;i<N;++i){
+		ww.kk[i].ch='\0';
+		ww.kk[i].n=0;
+	}
+}
+b_y_c qu_yuan(zifu *g)     //从链表中提取所有变元
+{
+	b_y_c k;
+	chushihua(k);
+	int i=0;
+	while(g!=nullptr){
+		if(g->by.ch>='a'&&g->by.ch<='z'&&check(g->by.ch,k.kk))
+			k.kk[i++].ch=g->by.ch;
+	};
+	return k;
+}
+
+void chushihua_bit_arry(bit_arry &a)  //用于初始化bit_arry结构
+{
+	for(int i=0;i<N;)
+		a.bit[i++]='\0';
+}
+
+
+int pow(int n,int i)  //实现n的i次方
+{
+	if(0==i)return 1;
+	if(1==i)return n;
+	return n*pow(n,i-1);
+}
+void _delete(zifu *&h,zifu *x)
+{
+	zifu *p=h,*pp=nullptr;
+	while(p!=nullptr&&(p!=x)){
+		pp=p;
+		p=p->next;
+	}
+	if(p==x){
+		if(p=h)
+			h=h->next;
+		else pp->next=p->next;
+		free(p);
+	}
+}
+void bds(zifu *&h,zifu *_do,zifu *_end)    //计算最基本的表达式
+{
+	zifu *hh=h,*hhh=h,*_do1,*_end1;
+	_do1=_do->next;
+	zifu *kk=_do;
+	while(1){
+		if(kk->next->next==_end){
+			_end1=kk;
+			break;
+		}
+		kk=kk->next;
+		}
+	while(hh!=_do1)
+		hh=hh->next;
+	while(hh!=_end1){
+	switch(hh->next->f){
+	case '|':
+		hh->by.n=hh->by.n||hh->next->by.n;
+		_delete(h,hh->next);
+		break;
+	case '&':
+		hh->by.n=hh->by.n&&hh->next->by.n;
+		_delete(h,hh->next);
+		break;
+
+	}
+	hh=hh->next;
+	}
+	while(hhh!=_end1){
+		switch(hhh->f){
+	case '-':
+		if(hh->by.n==1&&hh->next->by.n==0){
+			hh->by.n=0;
+		 _delete(h,hh->next);
+		}
+		hh->by.n=1;
+		_delete(h,hh->next);
+		break;
+	case '=':
+		if(hh->by.n==hh->next->by.n){
+			hh->by.n=1;
+			_delete(h,hh->next);
+		}
+		hh->by.n=0;
+		_delete(h,hh->next);
+		break;
+		}
+		hhh=hhh->next;
+	}
+}
+
+void k_h(zifu *&h,zifu *_do)    //遇到括号
+{
+	zifu *hh=h,*hhh=h;
+	zifu *l;
+	while(hh!=_do)
+		hh=hh->next;
+	l=hh;
+	while(1){
+		if(l->f==')'){
+			bds(hhh,_do,l);
+			break;
+		}if(l->f=='('){
+			k_h(hhh,l);
+		}
+		l=l->next;
+	}
+
+}
+void _dooo(zifu *&h)
+{
+	    zifu *hh=h;
+		while(hh->next!=nullptr){
+		if(hh->f=='!'&&hh->next->by.ch!='\0'){
+			hh->by.n=!hh->next->by.n;
+			hh->next=hh->next->next;
+			
+			hh->f='\0';
+		}
+		if(hh->f=='!'&&hh->next->f=='('){
+			zifu *jj=hh->next;
+			k_h(h,jj);
+		}
+		hh=hh->next;
+		}
+		
+}
+	
+bit_arry int_arry_to_bit_arry(int m,int n)   //将数m转化为n为二进制数的bit_arry结构
+{
+	bit_arry q;
+	chushihua_bit_arry(q);
+	int i=0;
+	int j=0;
+	while(m){
+		q.bit[i++]=m%2+'0';   ///顺序可忽略
+		m/=2;
+	}
+	while(i<n)
+		q.bit[i++]='0';
+	return q;
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+	
+   	int y=1;
+
+	while(y){
+	
+	char *s=nullptr;         //原始输入的表达式
+	scanf_s("%s",s);
+	b_y_c w;
+	chushihua(w);
+
+    zifu *p,*h=nullptr,*q=nullptr;     //
+	printf("输入任意命题公式，变元为小写字母,运算符为析取 | ,合取 & ,否定 ! ，单条件 - ，双条件 = . \n");
+	int i=0;
+	while(*s++){
+		p=(zifu *)malloc(sizeof zifu);
+		i+=1;
+		p->u=i;
+		if(*s>='a'&&*s<='z'){
+			p->by.n=0;
+			p->by.ch=*s;
+			p->f='\0';
+		}
+		else {
+			switch(*s){
+			case '!':
+			case '(':
+			case ')':
+			case '|':
+			case '&':
+			case '-':
+			case '=':
+				p->f=*s;
+				p->by.ch='\0';
+				p->by.n=0;
+				break;
+			default :printf("表达式有误！\n");
+				break;
+			}
+		}
+		if(nullptr==h)h=p;
+		else q->next=p;
+		q=p;
+	}q->next=nullptr;
+	w=qu_yuan(h);
+	int n;n=(sizeof w.kk)/(sizeof w.kk[0]);
+	int m=pow(2,n);
+	int nn=n;
+	bit_arry bit_a;
+	void chushihua_bit_arry(bit_arry bit_a);
+	while(n--){
+	printf("输入的表达式变元有：\n%c ",w.kk[n-1].ch);
+	}printf("\n");
+	while((--m)>=0){
+		bit_a=int_arry_to_bit_arry(m,n);
+		for(int i=0;i<n;++i)
+			w.kk[i].n=bit_a.bit[i]-'0';
+		_dooo(h);   //优先进行否定运算
+		zifu *rr=nullptr,*hh=h;
+		while(hh->next!=nullptr){
+			if(hh->f=='('){
+				rr=hh;
+				k_h(h,rr);
+			}
+			hh=hh->next;
+		}
+		for(int i=0;i<nn;++i)
+			printf("%d ",bit_a.bit[i]);
+		
+		printf(" 真值为 %d \n",h->by.n);
+		}
+			
+		printf("\n\nentre 1 continue , enter 0 exit \n");
+		scanf_s("%d",&y);
+	}
+	return 0;
+}
+
+
+
